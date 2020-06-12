@@ -19,15 +19,15 @@ enum Card {
 impl Card {
     fn get_points(&self) -> i32 {
         match self {
-            Card::Queen => 3,
             Card::Jack => 2,
+            Card::Queen => 3,
             Card::King => 4,
-            Card::Ace => 11,
             Card::_6 => 6,
             Card::_7 => 7,
             Card::_8 => 8,
             Card::_9 => 9,
             Card::_10 => 10,
+            Card::Ace => 11,
         }
     }
 }
@@ -126,7 +126,10 @@ impl fmt::Display for Deck {
         write!(f, "[ ");
         for d in self.0.iter() {
             write!(f, "{}", d);
-            if d != self.0.last().unwrap() {
+            if match self.0.last() {
+                Some(res) => res != d,
+                _ => false,
+            } {
                 write!(f, ", ");
             }
         }
