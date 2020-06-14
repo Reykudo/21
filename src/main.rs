@@ -2,8 +2,9 @@ use rand::prelude::ThreadRng;
 use rand::Rng;
 use std::any::Any;
 use std::cmp::Ordering;
-use std::fmt::Formatter;
+use std::fmt::{Display, Error, Formatter};
 use std::ops::Deref;
+use std::str::FromStr;
 use std::{fmt, io};
 
 enum Card {
@@ -19,7 +20,7 @@ enum Card {
 }
 
 impl Card {
-    fn get_points(&self) -> i32 {
+    fn get_points(&self) -> u32 {
         match self {
             Card::Jack => 2,
             Card::Queen => 3,
@@ -145,12 +146,12 @@ impl fmt::Display for Deck {
 }
 
 struct Player {
-    id: i32,
+    id: u32,
     cards: Deck,
 }
 
 impl Player {
-    fn new(id: i32) -> Player {
+    fn new(id: u32) -> Player {
         Player {
             id,
             cards: Deck(vec![]),
@@ -159,7 +160,7 @@ impl Player {
     fn give_card(&mut self, card: Card) {
         self.cards.0.push(card);
     }
-    fn get_score(&self) -> i32 {
+    fn get_score(&self) -> u32 {
         let mut sum = 0;
         for c in self.cards.0.iter() {
             sum += c.get_points()
@@ -167,20 +168,34 @@ impl Player {
         sum
     }
 }
-
+impl Display for Player {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
+        write!(f, "№{}, очки: {}", self.id, self.get_score());
+        Ok(())
+    }
+}
 fn main() {
+    let p_count: u32 = loop {
+        println!("Введите колличество игроков: ");
+        let mut buf = String::new();
+        io::stdin().read_line(&mut buf);
+        match buf.trim().parse::<u32>() {
+            Ok(a) => {
+                break a;
+            }
+            Err(a) => println!("Не верное число"),
+        }
+    };
+
     let mut deck = Deck::new();
-    let mut p_count: String = String::new();
-    println!("Введите колличество игроков: ");
-    io::stdin().read_line(&mut p_count);
     let mut players: Vec<Player> = vec![];
     let mut i = 0;
-    while i < /*p_count.parse::<i32>().unwrap()*/ 6 {
+    while i < p_count {
         players.push(Player::new(i));
         i += 1;
     }
     for p in (players).iter_mut() {
-        println!("Игрок №{}", p.id);
+        println!("Игрок {}", p);
         p.give_card(deck.get_random_card());
         println!("{}", (&p.cards));
         while p.get_score() < 21 {
@@ -188,16 +203,16 @@ fn main() {
             let mut answer: String = String::new();
             io::stdin().read_line(&mut answer);
             answer = answer.trim().to_lowercase();
-            if answer == String::from("y") {
-                p.give_card(deck.get_random_card());
-                println!("{}", (&p.cards));
-            } else if answer == String::from("n") {
-                break;
-            } else {
-                continue;
+            match &*answer {
+                "y" => {
+                    p.give_card(deck.get_random_card());
+                    println!("{}", (&p.cards));
+                }
+                "n" => break,
+                _ => continue,
             }
         }
-        println!("Игрок {}: очки - {}", p.id, p.get_score());
+        println!("Игрок {}", p);
     }
 
     println!("Вся колода: {}", &deck);
@@ -214,7 +229,7 @@ fn main() {
             }
         })
         .and_then(|v| {
-            print!("Победил игрок №: {}", v.id);
+            print!("Победил: {}", v);
             Option::Some(v)
         });
 }
